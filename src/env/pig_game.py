@@ -65,6 +65,8 @@ class PigGame:
                 self.current_stack[self.current_player] += np.sum(self.dices)
                 if (self.permanent_stack[self.current_player] + self.current_stack[self.current_player] > self.permanent_stack[1 - self.current_player]):
                     reward += 10 
+                if (self.permanent_stack[self.current_player] + self.current_stack[self.current_player] >= 100):
+                    reward += 20
 
         elif action == 0:  # Pass
             self.permanent_stack[self.current_player] += self.current_stack[self.current_player]
