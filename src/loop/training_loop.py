@@ -1,6 +1,6 @@
 import torch
 
-def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True):
+def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True, entropy_beta=0.01):
     """
     A combined loop for playing the game, storing game data, and training the neural networks (Actor and Critic).
     
@@ -8,42 +8,50 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
     - env: The PigGame environment.
     - actor: The Actor network.
     - critic: The Critic network.
-    - dummy: The Dummy player.
+    - dummy: The Dummy player (part of the environment, no reward influence).
     - actor_optimizer: Optimizer for the Actor network.
     - critic_optimizer: Optimizer for the Critic network.
     - gamma: Discount factor for future rewards.
     - num_episodes: Number of episodes to run for training.
     - debug: Boolean flag to enable debug prints (default True).
+    - entropy_beta: Coefficient for entropy regularization to encourage exploration.
     """
     for episode in range(num_episodes):
         state = env.reset()  # Reset the environment at the start of the game
         state = torch.tensor(state, dtype=torch.float32)  # Convert state to tensor
         done = False
-        total_reward = 0  # Track total reward for the episode
+        total_reward = 0  # Track total reward for the episode (only NN's actions)
 
         while not done:
             current_player = state[-1].item()  # Check whose turn it is
 
             # Network-controlled player (NN's turn)
-            while current_player == 0:
+            while current_player == 0 and not done:
                 # Forward pass through Actor to get action probabilities
                 action_probs = actor(state)
+                
+                if debug:
+                    print(f"Action probabilities from NN: {action_probs}")
+                
+                # Sample action based on probabilities
                 action = torch.multinomial(action_probs, 1).item()  # Sample action
                 if debug:
                     print(f"Network player's action: {action}")
                 
                 # Take action and get next state, reward, done
-                next_state, reward, done = env.step(action)
+                next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
 
                 # Convert reward to tensor if it's an int
                 if isinstance(reward, int):
-                    reward = torch.tensor([reward], dtype=torch.float32)
+                    reward_tensor = torch.tensor([reward], dtype=torch.float32)
+                else:
+                    reward_tensor = reward
 
                 # Critic update
                 state_value = critic(state)
                 next_state_value = critic(next_state)
-                advantage = reward + gamma * next_state_value * (1 - int(done)) - state_value
+                advantage = reward_tensor + gamma * next_state_value * (1 - int(done)) - state_value
 
                 # Critic loss (MSE)
                 critic_loss = advantage.pow(2).mean()
@@ -51,6 +59,10 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 # Actor loss (policy gradient)
                 log_prob = torch.log(action_probs[action])
                 actor_loss = -(log_prob * advantage.detach()).mean()
+
+                # Entropy regularization to encourage exploration
+                entropy = -(action_probs * torch.log(action_probs + 1e-10)).sum()
+                actor_loss -= entropy_beta * entropy  # Add entropy to the loss to encourage exploration
 
                 # Backpropagation for Actor-Critic
                 actor_optimizer.zero_grad()
@@ -61,8 +73,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 critic_loss.backward()
                 critic_optimizer.step()
 
-                # Accumulate the total reward
-                total_reward += reward.item()
+                # Accumulate the total reward for NN's actions only
+                total_reward += reward_tensor.item()
 
                 # If action is 0 (pass) or result is 6, switch to Dummy's turn
                 if action == 0 or 6 in next_state[:2]:
@@ -73,21 +85,16 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                     state = next_state  # NN continues to act
 
             # Dummy player's turn
-            if current_player == 1:
+            while current_player == 1 and not done:
                 # Dummy always rolls first (action 1)
                 action = 1
                 if debug:
                     print(f"Dummy player's action: {action}")
                 
-                next_state, reward, done = env.step(action)
+                next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
 
-                # Convert reward to tensor if it's an int
-                if isinstance(reward, int):
-                    reward = torch.tensor([reward], dtype=torch.float32)
-
-                # Accumulate the total reward
-                total_reward += reward.item()
+                # Dummy does not influence the total reward, so we don't accumulate its rewards
 
                 # If Dummy rolls a 6, switch back to NN's turn immediately
                 if 6 in next_state[:2]:
@@ -100,15 +107,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 if debug:
                     print(f"Dummy player's action: {action}")
                 
-                next_state, reward, done = env.step(action)
+                next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
-
-                # Convert reward to tensor if it's an int
-                if isinstance(reward, int):
-                    reward = torch.tensor([reward], dtype=torch.float32)
-
-                # Accumulate the total reward
-                total_reward += reward.item()
 
                 # Switch back to NN's turn after passing
                 current_player = 0
@@ -116,11 +116,12 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
             # Debugging information for every step
             if debug:
-                print(f"Episode: {episode}, Reward: {reward.item()}, Total Reward: {total_reward}")
+                print(f"Episode: {episode}, NN's Reward: {reward_tensor.item()}, Total Reward (NN only): {total_reward}")
                 print(f"Observation: {next_state.numpy()}")
+                print(f"Done: {done}")
                 print("-" * 30)
 
         # End of episode debugging information
         if episode % 100 == 0 or debug:
-            print(f"Episode {episode} finished, Total Reward: {total_reward}")
+            print(f"Episode {episode} finished, Total Reward (NN only): {total_reward}")
 
