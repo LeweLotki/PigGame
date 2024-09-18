@@ -28,7 +28,6 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
     
     for episode in range(num_episodes):
         state = env.reset()  # Reset the environment at the start of the game
-        state = torch.tensor(state, dtype=torch.float32)  # Convert state to tensor
         
         # Normalize the initial state
         state = normalize_observation(state, min_vals, max_vals)
@@ -54,7 +53,6 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 
                 # Take action and get next state, reward, done
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
-                next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
                 
                 # Normalize the next state
                 next_state = normalize_observation(next_state, min_vals, max_vals)
@@ -109,7 +107,6 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                     print(f"Dummy player's action: {action}")
                 
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
-                next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
                 
                 # Normalize the next state for dummy as well
                 next_state = normalize_observation(next_state, min_vals, max_vals)
@@ -126,7 +123,6 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                     print(f"Dummy player's action: {action}")
                 
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
-                next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
 
                 # Normalize the state again
                 next_state = normalize_observation(next_state, min_vals, max_vals)
@@ -146,7 +142,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
         rewards_per_episode.append(total_reward)
         # End of episode debugging information
         if episode % 100 == 0 or debug:
-            print(f"Episode {episode} finished, Total Reward (NN only): {total_reward}")
+            print(f"Episode {episode} finished, Total Reward: {total_reward}")
 
     # Return the rewards for each episode
     return rewards_per_episode
@@ -165,7 +161,6 @@ def normalize_observation(state, min_vals, max_vals):
     - Normalized state.
     """
     # Ensure state is a tensor for computation
-    state = torch.tensor(state, dtype=torch.float32)
 
     # Min-Max normalization (scaled to [0, 1])
     normalized_state = (state - min_vals) / (max_vals - min_vals)

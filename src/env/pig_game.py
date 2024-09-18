@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 
 class PigGame:
     def __init__(self):
@@ -10,9 +10,9 @@ class PigGame:
         - current_player: 0 for Player 1, 1 for Player 2.
         - done: Flag indicating if the game has ended.
         """
-        self.dices = np.array([0, 0])
-        self.current_stack = np.array([0, 0])
-        self.permanent_stack = np.array([0, 0])
+        self.dices = torch.tensor([0, 0], dtype=torch.float32)
+        self.current_stack = torch.tensor([0, 0], dtype=torch.float32)
+        self.permanent_stack = torch.tensor([0, 0], dtype=torch.float32)
         self.current_player = 0
         self.done = False
 
@@ -20,19 +20,19 @@ class PigGame:
         """
         Reset the environment to start a new game.
         """
-        self.dices = np.array([0, 0])
-        self.current_stack = np.array([0, 0])
-        self.permanent_stack = np.array([0, 0])
+        self.dices = torch.tensor([0, 0], dtype=torch.float32)
+        self.current_stack = torch.tensor([0, 0], dtype=torch.float32)
+        self.permanent_stack = torch.tensor([0, 0], dtype=torch.float32)
         self.current_player = 0
         self.done = False
         return self.get_observation()
 
     def roll_dice(self):
         """
-        Simulate rolling two dice by assigning a new NumPy array
+        Simulate rolling two dice by assigning a new torch tensor
         with random integers between 1 and 6.
         """
-        self.dices = np.random.randint(1, 7, size=2)
+        self.dices = torch.randint(1, 7, (2,), dtype=torch.float32)
     
     def get_observation(self):
         """
@@ -42,7 +42,7 @@ class PigGame:
         - Permanent stack for both players (self.permanent_stack)
         - Current player's turn (self.current_player)
         """
-        return np.concatenate((self.dices, self.current_stack, self.permanent_stack, [self.current_player]))
+        return torch.cat((self.dices, self.current_stack, self.permanent_stack, torch.tensor([self.current_player], dtype=torch.float32)))
 
     def step(self, action):
         """
@@ -62,7 +62,7 @@ class PigGame:
                 self.current_stack[self.current_player] = 0
                 self.switch_turn()
             else:
-                self.current_stack[self.current_player] += np.sum(self.dices)
+                self.current_stack[self.current_player] += torch.sum(self.dices)
 
             if (self.permanent_stack[self.current_player] - self.permanent_stack[1 - self.current_player] > 0):
                 reward = 1

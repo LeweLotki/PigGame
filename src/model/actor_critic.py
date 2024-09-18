@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 # Actor Network: Outputs action probabilities (Pass or Roll)
 class Actor(nn.Module):
-    def __init__(self, input_size, output_size=2):
+    def __init__(self, input_size=7, output_size=2):
         """
         Initialize the Actor network.
         - input_size: Size of the observation space (number of features).
@@ -27,7 +27,7 @@ class Actor(nn.Module):
 
 # Critic Network: Outputs state-value (V(s))
 class Critic(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, input_size=7):
         """
         Initialize the Critic network.
         - input_size: Size of the observation space (number of features).
