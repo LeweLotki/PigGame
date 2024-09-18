@@ -137,7 +137,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
             # Debugging information for every step
             if debug:
-                print(f"Episode: {episode}, NN's Reward: {reward_tensor.item()}, Total Reward (NN only): {total_reward}")
+                print(f"Episode: {episode}, NN's Reward: {reward_tensor.item()}, Total Reward: {total_reward}")
                 print(f"Observation: {next_state.numpy()}")
                 print(f"Done: {done}")
                 print("-" * 30)
