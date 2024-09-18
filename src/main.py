@@ -20,9 +20,19 @@ actor_optimizer = optim.Adam(actor.parameters(), lr=1e-3)
 critic_optimizer = optim.Adam(critic.parameters(), lr=1e-3)
 
 # Set hyperparameters
-num_episodes = 100
+num_episodes = 1e4
 gamma = 0.99
 
 # Run the training loop with debug prints
-training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=gamma, num_episodes=num_episodes, debug=True)
+training_loop(
+    env=env, 
+    actor=actor, 
+    critic=critic, 
+    dummy=dummy, 
+    actor_optimizer=actor_optimizer, 
+    critic_optimizer=critic_optimizer, 
+    gamma=gamma, 
+    num_episodes=int(num_episodes), 
+    debug=False
+)
 

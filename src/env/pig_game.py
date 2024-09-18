@@ -55,26 +55,27 @@ class PigGame:
         - reward: Scalar reward for the action.
         - done: Whether the episode (game) has ended.
         """
+        reward = 0 
         if action == 1:  # Roll the dice
             self.roll_dice()
-            reward = -5
             if 6 in self.dices:  # If either dice is a 6, reset current stack
                 self.current_stack[self.current_player] = 0
                 self.switch_turn()
             else:
                 self.current_stack[self.current_player] += np.sum(self.dices)
-                if (self.permanent_stack[self.current_player] + self.current_stack[self.current_player] > self.permanent_stack[1 - self.current_player]):
-                    reward += 10 
                 if (self.permanent_stack[self.current_player] + self.current_stack[self.current_player] >= 100):
-                    reward += 20
+                    reward = 1000
+            if (self.permanent_stack[self.current_player] - self.permanent_stack[1 - self.current_player] > 0):
+                reward = 1
+            else:
+                reward = -1
 
-        elif action == 0:  # Pass
+        elif action == 0:  
             self.permanent_stack[self.current_player] += self.current_stack[self.current_player]
-            reward = -10 if self.current_stack[self.current_player] == 0 else 5 
+            reward = 1 if self.current_stack[self.current_player] > 0 else -5
             self.current_stack[self.current_player] = 0
             self.switch_turn()
         
-        # Check if the current player has won
         self.done = self.permanent_stack[self.current_player] >= 100
         return self.get_observation(), reward, self.done
 
