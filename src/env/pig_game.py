@@ -63,7 +63,12 @@ class PigGame:
                 self.switch_turn()
             else:
                 self.current_stack[self.current_player] += np.sum(self.dices)
-                reward = np.sum(self.dices) 
+                reward = np.sum(self.dices)
+                if (self.permanent_stack[self.current_player] + self.current_stack[self.current_player] > self.permanent_stack[1 - self.current_player]):
+                    reward += 50
+                else:
+                    reward -= 10
+
         elif action == 0:  # Pass
             self.permanent_stack[self.current_player] += self.current_stack[self.current_player]
             reward = -100 if self.current_stack[self.current_player] == 0 else self.permanent_stack[self.current_player] 

@@ -1,11 +1,31 @@
 import torch
 
 # Define min and max values based on the known range of each observation
-# This is an example, you should replace these with the actual ranges from your game
-min_vals = torch.tensor([0, 0, 0, 0, 0, 0, 0], dtype=torch.float32)  # Replace with real min values
-max_vals = torch.tensor([6, 6, 100, 100, 100, 100, 1], dtype=torch.float32)  # Replace with real max values
+# Replace these with the actual ranges from your game
+min_vals = torch.tensor([0, 0, 0, 0, 0, 0, 0], dtype=torch.float32)
+max_vals = torch.tensor([6, 6, 100, 100, 100, 100, 1], dtype=torch.float32)
 
 def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True, entropy_beta=0.01):
+    """
+    A combined loop for playing the game, storing game data, and training the neural networks (Actor and Critic).
+    
+    Parameters:
+    - env: The PigGame environment.
+    - actor: The Actor network.
+    - critic: The Critic network.
+    - dummy: The Dummy player (part of the environment, no reward influence).
+    - actor_optimizer: Optimizer for the Actor network.
+    - critic_optimizer: Optimizer for the Critic network.
+    - gamma: Discount factor for future rewards.
+    - num_episodes: Number of episodes to run for training.
+    - debug: Boolean flag to enable debug prints (default True).
+    - entropy_beta: Coefficient for entropy regularization to encourage exploration.
+    
+    Returns:
+    - rewards_per_episode: A list of total rewards collected per episode.
+    """
+    rewards_per_episode = []  # List to store total rewards for each episode
+    
     for episode in range(num_episodes):
         state = env.reset()  # Reset the environment at the start of the game
         state = torch.tensor(state, dtype=torch.float32)  # Convert state to tensor
@@ -122,9 +142,15 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 print(f"Done: {done}")
                 print("-" * 30)
 
+        # End of episode: accumulate the total reward
+        rewards_per_episode.append(total_reward)
         # End of episode debugging information
         if episode % 100 == 0 or debug:
             print(f"Episode {episode} finished, Total Reward (NN only): {total_reward}")
+
+    # Return the rewards for each episode
+    return rewards_per_episode
+
 
 def normalize_observation(state, min_vals, max_vals):
     """
