@@ -1,7 +1,6 @@
 import torch
 
 # Define min and max values based on the known range of each observation
-# Replace these with the actual ranges from your game
 min_vals = torch.tensor([0, 0, 0, 0, 0, 0, 0], dtype=torch.float32)
 max_vals = torch.tensor([6, 6, 100, 100, 100, 100, 1], dtype=torch.float32)
 
@@ -23,8 +22,14 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
     
     Returns:
     - rewards_per_episode: A list of total rewards collected per episode.
+    - game_scores: A list of lists, where each element is a list of two lists (dummy scores, NN scores) for each game.
+    - actor_losses: A list of actor losses for each episode.
+    - critic_losses: A list of critic losses for each episode.
     """
-    rewards_per_episode = []  # List to store total rewards for each episode
+    rewards_per_episode = []  # To store total rewards for each episode
+    game_scores = []  # To store scores of each game (dummy's permanent stack, NN's permanent stack)
+    actor_losses = []  # To store actor losses for each episode
+    critic_losses = []  # To store critic losses for each episode
     
     for episode in range(num_episodes):
         state = env.reset()  # Reset the environment at the start of the game
@@ -34,6 +39,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
         
         done = False
         total_reward = 0  # Track total reward for the episode (only NN's actions)
+        episode_actor_loss = 0  # Accumulate actor loss for the episode
+        episode_critic_loss = 0  # Accumulate critic loss for the episode
 
         while not done:
             current_player = state[-1].item()  # Check whose turn it is
@@ -43,8 +50,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 # Forward pass through Actor to get action probabilities
                 action_probs = actor(state)
                 
-#                if debug:
-#                    print(f"Action probabilities from NN: {action_probs}")
+                if debug:
+                    print(f"Action probabilities from NN: {action_probs}")
                 
                 # Sample action based on probabilities
                 action = torch.multinomial(action_probs, 1).item()  # Sample action
@@ -58,10 +65,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 next_state = normalize_observation(next_state, min_vals, max_vals)
 
                 # Convert reward to tensor if it's an int
-                if isinstance(reward, int):
-                    reward_tensor = torch.tensor([reward], dtype=torch.float32)
-                else:
-                    reward_tensor = reward
+                reward_tensor = torch.tensor([reward], dtype=torch.float32) if isinstance(reward, int) else reward
 
                 # Critic update
                 state_value = critic(state)
@@ -70,10 +74,12 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
                 # Critic loss (MSE)
                 critic_loss = advantage.pow(2).mean()
+                episode_critic_loss += critic_loss.item()  # Accumulate critic loss
 
                 # Actor loss (policy gradient)
                 log_prob = torch.log(action_probs[action])
                 actor_loss = -(log_prob * advantage.detach()).mean()
+                episode_actor_loss += actor_loss.item()  # Accumulate actor loss
 
                 # Entropy regularization to encourage exploration
                 entropy = -(action_probs * torch.log(action_probs + 1e-10)).sum()
@@ -92,7 +98,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 total_reward += reward_tensor.item()
 
                 # If action is 0 (pass) or result is 6, switch to Dummy's turn
-                if action == 0 or 1 in next_state[:2]:
+                if action == 0 or 6 in next_state[:2]:
                     current_player = 1  # Switch to Dummy's turn
                     state = next_state
                     break  # Exit the NN's loop
@@ -112,7 +118,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 next_state = normalize_observation(next_state, min_vals, max_vals)
 
                 # If Dummy rolls a 6, switch back to NN's turn immediately
-                if 1 in next_state[:2]:
+                if 6 in next_state[:2]:
                     current_player = 0  # Switch to NN's turn
                     state = next_state
                     continue  # Skip the pass and give NN the turn immediately
@@ -138,14 +144,20 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 print(f"Done: {done}")
                 print("-" * 30)
 
-        # End of episode: accumulate the total reward
+        # End of episode: append the total reward and the scores (permanent stack for both players)
         rewards_per_episode.append(total_reward)
+        game_scores.append([env.permanent_stack.tolist()])  # Permanent stack of both players
+
+        # Append the losses
+        actor_losses.append(episode_actor_loss)
+        critic_losses.append(episode_critic_loss)
+
         # End of episode debugging information
         if episode % 100 == 0 or debug:
             print(f"Episode {episode} finished, Total Reward: {total_reward}")
 
-    # Return the rewards for each episode
-    return rewards_per_episode
+    # Return the rewards for each episode, scores, and losses
+    return rewards_per_episode, game_scores, actor_losses, critic_losses
 
 
 def normalize_observation(state, min_vals, max_vals):
@@ -160,10 +172,7 @@ def normalize_observation(state, min_vals, max_vals):
     Returns:
     - Normalized state.
     """
-    # Ensure state is a tensor for computation
-
     # Min-Max normalization (scaled to [0, 1])
     normalized_state = (state - min_vals) / (max_vals - min_vals)
-
     return normalized_state
 
