@@ -1,24 +1,18 @@
 import torch
 
+# Define min and max values based on the known range of each observation
+# This is an example, you should replace these with the actual ranges from your game
+min_vals = torch.tensor([0, 0, 0, 0, 0, 0, 0], dtype=torch.float32)  # Replace with real min values
+max_vals = torch.tensor([6, 6, 100, 100, 100, 100, 1], dtype=torch.float32)  # Replace with real max values
+
 def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True, entropy_beta=0.01):
-    """
-    A combined loop for playing the game, storing game data, and training the neural networks (Actor and Critic).
-    
-    Parameters:
-    - env: The PigGame environment.
-    - actor: The Actor network.
-    - critic: The Critic network.
-    - dummy: The Dummy player (part of the environment, no reward influence).
-    - actor_optimizer: Optimizer for the Actor network.
-    - critic_optimizer: Optimizer for the Critic network.
-    - gamma: Discount factor for future rewards.
-    - num_episodes: Number of episodes to run for training.
-    - debug: Boolean flag to enable debug prints (default True).
-    - entropy_beta: Coefficient for entropy regularization to encourage exploration.
-    """
     for episode in range(num_episodes):
         state = env.reset()  # Reset the environment at the start of the game
         state = torch.tensor(state, dtype=torch.float32)  # Convert state to tensor
+        
+        # Normalize the initial state
+        state = normalize_observation(state, min_vals, max_vals)
+        
         done = False
         total_reward = 0  # Track total reward for the episode (only NN's actions)
 
@@ -41,6 +35,9 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 # Take action and get next state, reward, done
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
+                
+                # Normalize the next state
+                next_state = normalize_observation(next_state, min_vals, max_vals)
 
                 # Convert reward to tensor if it's an int
                 if isinstance(reward, int):
@@ -93,8 +90,9 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
-
-                # Dummy does not influence the total reward, so we don't accumulate its rewards
+                
+                # Normalize the next state for dummy as well
+                next_state = normalize_observation(next_state, min_vals, max_vals)
 
                 # If Dummy rolls a 6, switch back to NN's turn immediately
                 if 6 in next_state[:2]:
@@ -110,6 +108,9 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 next_state, reward, done = env.step(action)  # `done` should be set by the environment
                 next_state = torch.tensor(next_state, dtype=torch.float32)  # Convert to tensor
 
+                # Normalize the state again
+                next_state = normalize_observation(next_state, min_vals, max_vals)
+
                 # Switch back to NN's turn after passing
                 current_player = 0
                 state = next_state
@@ -124,4 +125,24 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
         # End of episode debugging information
         if episode % 100 == 0 or debug:
             print(f"Episode {episode} finished, Total Reward (NN only): {total_reward}")
+
+def normalize_observation(state, min_vals, max_vals):
+    """
+    Normalizes the observation using Min-Max scaling to the range [0, 1].
+
+    Parameters:
+    - state: The current observation (numpy array or tensor).
+    - min_vals: The minimum values for each feature in the observation.
+    - max_vals: The maximum values for each feature in the observation.
+
+    Returns:
+    - Normalized state.
+    """
+    # Ensure state is a tensor for computation
+    state = torch.tensor(state, dtype=torch.float32)
+
+    # Min-Max normalization (scaled to [0, 1])
+    normalized_state = (state - min_vals) / (max_vals - min_vals)
+
+    return normalized_state
 

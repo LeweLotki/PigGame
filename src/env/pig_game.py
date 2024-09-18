@@ -59,15 +59,15 @@ class PigGame:
             self.roll_dice()
             if 6 in self.dices:  # If either dice is a 6, reset current stack
                 self.current_stack[self.current_player] = 0
-                reward = -10  # Penalty for rolling a 6
+                reward = -50  # Penalty for rolling a 6
                 self.switch_turn()
             else:
                 self.current_stack[self.current_player] += np.sum(self.dices)
-                reward = 5 
+                reward = np.sum(self.dices) 
         elif action == 0:  # Pass
             self.permanent_stack[self.current_player] += self.current_stack[self.current_player]
+            reward = -100 if self.current_stack[self.current_player] == 0 else self.permanent_stack[self.current_player] 
             self.current_stack[self.current_player] = 0
-            reward = 100 if self.permanent_stack[self.current_player] >= 100 else 1  # Reward for passing
             self.switch_turn()
         
         # Check if the current player has won
