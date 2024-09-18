@@ -44,8 +44,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 # Forward pass through Actor to get action probabilities
                 action_probs = actor(state)
                 
-                if debug:
-                    print(f"Action probabilities from NN: {action_probs}")
+#                if debug:
+#                    print(f"Action probabilities from NN: {action_probs}")
                 
                 # Sample action based on probabilities
                 action = torch.multinomial(action_probs, 1).item()  # Sample action
@@ -94,7 +94,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 total_reward += reward_tensor.item()
 
                 # If action is 0 (pass) or result is 6, switch to Dummy's turn
-                if action == 0 or 6 in next_state[:2]:
+                if action == 0 or 1 in next_state[:2]:
                     current_player = 1  # Switch to Dummy's turn
                     state = next_state
                     break  # Exit the NN's loop
@@ -115,7 +115,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 next_state = normalize_observation(next_state, min_vals, max_vals)
 
                 # If Dummy rolls a 6, switch back to NN's turn immediately
-                if 6 in next_state[:2]:
+                if 1 in next_state[:2]:
                     current_player = 0  # Switch to NN's turn
                     state = next_state
                     continue  # Skip the pass and give NN the turn immediately
