@@ -105,6 +105,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 else:
                     state = next_state  # NN continues to act
 
+                game_scores.append([env.permanent_stack.tolist()])  # Permanent stack of both players
+
             # Dummy player's turn
             while current_player == 1 and not done:
                 # Dummy always rolls first (action 1)
@@ -136,6 +138,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 # Switch back to NN's turn after passing
                 current_player = 0
                 state = next_state
+                game_scores.append([env.permanent_stack.tolist()])  # Permanent stack of both players
 
             # Debugging information for every step
             if debug:
@@ -146,7 +149,6 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
         # End of episode: append the total reward and the scores (permanent stack for both players)
         rewards_per_episode.append(total_reward)
-        game_scores.append([env.permanent_stack.tolist()])  # Permanent stack of both players
 
         # Append the losses
         actor_losses.append(episode_actor_loss)
