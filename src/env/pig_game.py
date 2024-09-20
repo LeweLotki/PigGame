@@ -39,7 +39,7 @@ class PigGame:
 
         elif action == 0:  
             self.permanent_stack[self.current_player] += self.current_stack[self.current_player]
-            reward = 1 if self.current_stack[self.current_player] > 0 else -5
+            reward = 1 if self.current_stack[self.current_player] > 10 else -5
             self.current_stack[self.current_player] = 0
             self.switch_turn()
         

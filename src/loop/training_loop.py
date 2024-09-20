@@ -3,7 +3,7 @@ import torch
 min_vals = torch.tensor([0, 0, 0, 0, 0, 0, 0], dtype=torch.float32)
 max_vals = torch.tensor([6, 6, 100, 100, 100, 100, 1], dtype=torch.float32)
 
-def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True, entropy_beta=0.01):
+def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, gamma=0.99, num_episodes=1000, debug=True, entropy_beta=0.001):
     rewards_per_episode = []  
     game_scores = [] 
     actor_losses = [] 
