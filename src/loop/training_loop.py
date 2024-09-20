@@ -8,7 +8,10 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
     game_scores = [] 
     actor_losses = [] 
     critic_losses = []
-    
+
+    actor_scheduler = torch.optim.lr_scheduler.StepLR(actor_optimizer, step_size=100, gamma=0.05)
+    critic_scheduler = torch.optim.lr_scheduler.StepLR(critic_optimizer, step_size=100, gamma=0.05)
+
     for episode in range(num_episodes):
         state = env.reset()  
         
@@ -107,6 +110,9 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
         actor_losses.append(episode_actor_loss)
         critic_losses.append(episode_critic_loss)
+
+        actor_scheduler.step()  
+        critic_scheduler.step()
 
         if episode % 100 == 0 or debug:
             print(f"Episode {episode} finished, Total Reward: {total_reward}")
