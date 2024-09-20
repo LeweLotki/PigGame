@@ -62,7 +62,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
 
                 total_reward += reward_tensor.item()
 
-                if action == 0 or 6 in next_state[:2]:
+                if action == 0 or 1 in next_state[:2]:
                     current_player = 1  
                     state = next_state
                     break  
@@ -80,7 +80,7 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
                 
                 next_state = normalize_observation(next_state, min_vals, max_vals)
 
-                if 6 in next_state[:2]:
+                if 1 in next_state[:2]:
                     current_player = 0  
                     state = next_state
                     continue  
