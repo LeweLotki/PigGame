@@ -9,8 +9,8 @@ def training_loop(env, actor, critic, dummy, actor_optimizer, critic_optimizer, 
     actor_losses = [] 
     critic_losses = []
 
-    actor_scheduler = torch.optim.lr_scheduler.StepLR(actor_optimizer, step_size=100, gamma=0.05)
-    critic_scheduler = torch.optim.lr_scheduler.StepLR(critic_optimizer, step_size=100, gamma=0.05)
+    actor_scheduler = torch.optim.lr_scheduler.StepLR(actor_optimizer, step_size=100, gamma=0.95)
+    critic_scheduler = torch.optim.lr_scheduler.StepLR(critic_optimizer, step_size=100, gamma=0.95)
 
     for episode in range(num_episodes):
         state = env.reset()  
